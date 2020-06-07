@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html >
+<head>
+  <meta charset="UTF-8">
+  <title>ML API</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script>
+        $(function(){
+            var dynamicVar = '{% if forecast %}{{ forecast }}{% else%}base{% endif %}';
+            $("#forecast").val(dynamicVar).attr("selected", "selected");
+        });
+  </script>
+</head>
+
+<body>
+ <div class="login">
+	<h1>Time series forecasting</h1>
+  <form action="/result" method="post">
+        <dl>
+            <dd>Choose model:
+                    <select name="forecast" id="forecast" selected="selected">
+                        <option value="base">Please select model</option>
+                        <option value="arma">ARMA</option>
+                        <option value="arima">ARIMA</option>
+                        <option value="exp">Exponential Smoothing</option>
+                        <option value="prophet">Prophet</option>
+                        <option value="auto_arima">Auto ARIMA</option>
+                    </select>
+            </dd><br>
+            <dd><input type=submit value="Show forecast"></dd>
+        </dl>
+  </form>
+ </div>
+ {% if fcast %}
+        <h3 align="center">Forecasting using {{ forecast }} </h3>
+        <div class="container">
+            <!-- {{ fcast|safe }} -->
+            <img src={{fcast|safe}} alt="Chart" width="auto" height="20%">
+        </div>
+    {% endif %}
+</body>
+</html>

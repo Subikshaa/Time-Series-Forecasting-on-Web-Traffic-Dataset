@@ -42,6 +42,7 @@ def home():
                 arma_forecast_df.lower_views, \
                 arma_forecast_df.upper_views, \
                 color='pink', alpha=0.5)
+            plt.xlabel('Date')
             plt.ylabel('Views')
             plt.legend(loc='best')
             new_arma_plot = "arma_plot_" + str(time.time()) + ".png"
@@ -69,6 +70,7 @@ def home():
                 arima_forecast_df.lower_views, \
                 arima_forecast_df.upper_views, \
                 color='pink', alpha=0.5)
+            plt.xlabel('Date')
             plt.ylabel('Views')
             plt.legend(loc='best')
             new_arima_plot = "arima_plot_" + str(time.time()) + ".png"
@@ -83,11 +85,17 @@ def home():
         elif method == 'exp':
             exp_model = pickle.load(open('model/exp_smoothing_model.pkl', 'rb'))
             exp_smoothing_result = exp_model.fit(smoothing_level=0.5,optimized=True)
-
+            test.index=pd.DatetimeIndex(test.index)
             exp_smoothing_forecast = exp_smoothing_result.forecast(test.shape[0])
+            exp_smoothing_forecast=exp_smoothing_forecast.reset_index().rename(columns={'index':'Date',0:'Views'}).set_index('Date')
 
-            plt.plot(data_df,label='Actual data',color='blue')
-            plt.plot(exp_smoothing_forecast, label='Forecast',color='red')
+            fig, ax = plt.subplots(figsize=(15,4))
+            test.rename(columns={'Views':'Actual data'}).plot(ax=ax,color='blue')
+            exp_smoothing_forecast.rename(columns={'Views':'Forecast'}).plot(ax=ax,color='red')
+            # plt.plot(test,label='Actual data',color='blue',ax=ax)
+            # plt.plot(exp_smoothing_forecast, label='Forecast',color='red',ax=ax)
+            plt.xlabel('Date')
+            plt.ylabel('Views')
             plt.legend(loc='best')
 
             new_exp_plot = "exp_plot_" + str(time.time()) + ".png"

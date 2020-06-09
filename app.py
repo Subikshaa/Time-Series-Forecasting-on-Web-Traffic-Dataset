@@ -2,6 +2,7 @@ import os
 import pickle
 from flask import Flask, request, jsonify, render_template
 import pandas as pd
+
 from statsmodels.tsa.statespace.sarimax import SARIMAXResults
 import matplotlib
 matplotlib.use('Agg')
@@ -116,8 +117,9 @@ def home():
             forecast_prophet = forecast_prophet.set_index('ds')
 
             fig, ax = plt.subplots(figsize=(15,4))
+            pd.plotting.register_matplotlib_converters()
             test.rename(columns={'Views':'Actual data'}).plot(ax=ax,color='blue')
-            forecast_prophet.rename(columns={'Views':'Forecast'})[['yhat']].plot(ax=ax,color='red')
+            forecast_prophet.rename(columns={'yhat':'Forecast'})[['Forecast']].plot(ax=ax,color='red')
             plt.fill_between(forecast_prophet.index,forecast_prophet['yhat_lower'],forecast_prophet['yhat_upper'],color='pink',alpha=0.5)
             plt.xlabel('Date')
             plt.ylabel('Views')
@@ -131,6 +133,27 @@ def home():
 
             plt.savefig('static/' + new_prophet_plot)
             return render_template('index.html', forecast='Prophet', fcast='static/' + new_prophet_plot)
+
+        elif method == 'auto_arima':
+            auto_arima_result = SARIMAXResults.load('model/auto_arima_model.pkl')
+            auto_arima_forecast = auto_arima_result.predict(n_periods=test.shape[0])
+            auto_arima_forecast = pd.DataFrame(auto_arima_forecast,index = test.index,columns=['Forecast'])
+
+            fig, ax = plt.subplots(figsize=(15,4))
+            test.rename(columns={'Views':'Actual value'}).plot(ax=ax,color='blue')
+            auto_arima_forecast[['Forecast']].plot(ax=ax,label='Forecast',color='red')
+            ax.set_xlabel('Date')
+            ax.set_ylabel('Views')
+            plt.legend(loc='best')
+
+            new_auto_arima_plot = "auto_arima_plot_" + str(time.time()) + ".png"
+
+            for filename in os.listdir('static/'):
+                if filename.startswith('auto_arima_plot_'):
+                    os.remove('static/' + filename)
+
+            plt.savefig('static/' + new_auto_arima_plot)
+            return render_template('index.html', forecast='Auto-arima', fcast='static/' + new_auto_arima_plot)
     return render_template('index.html', fcast=fcast)
 
 if __name__ == '__main__':

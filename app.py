@@ -15,6 +15,7 @@ SECRET_KEY = os.urandom(24)
 
 data_df = pd.read_csv('Preprocessed_data/final_data.csv')
 data_df = data_df.set_index('Date')
+# data_df.index = pd.DatetimeIndex(data_df.index)
 
 train = data_df[:'2016-09']
 test = data_df['2016-10':]
@@ -92,8 +93,6 @@ def home():
             fig, ax = plt.subplots(figsize=(15,4))
             test.rename(columns={'Views':'Actual data'}).plot(ax=ax,color='blue')
             exp_smoothing_forecast.rename(columns={'Views':'Forecast'}).plot(ax=ax,color='red')
-            # plt.plot(test,label='Actual data',color='blue',ax=ax)
-            # plt.plot(exp_smoothing_forecast, label='Forecast',color='red',ax=ax)
             plt.xlabel('Date')
             plt.ylabel('Views')
             plt.legend(loc='best')
@@ -107,6 +106,31 @@ def home():
             plt.savefig('static/' + new_exp_plot)
             return render_template('index.html', forecast='Exponential Smoothing', fcast='static/' + new_exp_plot)
 
+        elif method == 'prophet':
+            prophet_model = pickle.load(open('model/prophet_model.pkl', 'rb'))
+            test.index = pd.DatetimeIndex(test.index)
+            future = prophet_model.make_future_dataframe(periods=test.shape[0])
+            prophet_forecast = prophet_model.predict(future)
+
+            forecast_prophet = prophet_forecast[['ds','yhat_lower','yhat_upper','yhat']][-test.shape[0]:]
+            forecast_prophet = forecast_prophet.set_index('ds')
+
+            fig, ax = plt.subplots(figsize=(15,4))
+            test.rename(columns={'Views':'Actual data'}).plot(ax=ax,color='blue')
+            forecast_prophet.rename(columns={'Views':'Forecast'})[['yhat']].plot(ax=ax,color='red')
+            plt.fill_between(forecast_prophet.index,forecast_prophet['yhat_lower'],forecast_prophet['yhat_upper'],color='pink',alpha=0.5)
+            plt.xlabel('Date')
+            plt.ylabel('Views')
+            plt.legend(loc='best')
+
+            new_prophet_plot = "prophet_plot_" + str(time.time()) + ".png"
+
+            for filename in os.listdir('static/'):
+                if filename.startswith('prophet_plot_'):
+                    os.remove('static/' + filename)
+
+            plt.savefig('static/' + new_prophet_plot)
+            return render_template('index.html', forecast='Prophet', fcast='static/' + new_prophet_plot)
     return render_template('index.html', fcast=fcast)
 
 if __name__ == '__main__':

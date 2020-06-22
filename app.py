@@ -2,6 +2,7 @@ import os
 import pickle
 from flask import Flask, request, jsonify, render_template
 import pandas as pd
+import boto3
 
 from statsmodels.tsa.statespace.sarimax import SARIMAXResults
 import matplotlib
@@ -14,8 +15,18 @@ import time
 app = Flask(__name__)
 SECRET_KEY = os.urandom(24)
 
-data_df = pd.read_csv('Preprocessed_data/final_data.csv')
-data_df = data_df.set_index('Date')
+bucket = "flaskforecast"
+file_name = "final_data.csv"
+
+s3 = boto3.client('s3')
+# 's3' is a key word. create connection to S3 using default config and all buckets within S3
+
+obj = s3.get_object(Bucket= bucket, Key= file_name)
+# get object and file (key) from bucket
+
+data_df = pd.read_csv(obj['Body'])
+# data_df = pd.read_csv('Preprocessed_data/final_data.csv')
+# data_df = data_df.set_index('Date')
 # data_df.index = pd.DatetimeIndex(data_df.index)
 
 train = data_df[:'2016-09']

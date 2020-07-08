@@ -1,9 +1,9 @@
+# Import packages
 import os
 import pickle
 from flask import Flask, request, jsonify, render_template
 import pandas as pd
 import boto3
-
 from statsmodels.tsa.statespace.sarimax import SARIMAXResults
 import matplotlib
 matplotlib.use('Agg')
@@ -15,23 +15,22 @@ import time
 app = Flask(__name__)
 SECRET_KEY = os.urandom(24)
 
+# Read data from S3 bucket
 bucket = "flaskforecast"
 file_name = "final_data.csv"
 
-s3 = boto3.client('s3')
-# 's3' is a key word. create connection to S3 using default config and all buckets within S3
-
+s3 = boto3.client('s3',aws_access_key_id = YOUR_ACCESS_KEY,aws_secret_access_key=YOUR_SECRET_KEY)
 obj = s3.get_object(Bucket= bucket, Key= file_name)
-# get object and file (key) from bucket
-
 data_df = pd.read_csv(obj['Body'])
-# data_df = pd.read_csv('Preprocessed_data/final_data.csv')
-# data_df = data_df.set_index('Date')
-# data_df.index = pd.DatetimeIndex(data_df.index)
+data_df = data_df.set_index('Date')
+data_df.index = pd.DatetimeIndex(data_df.index)
 
+# Train, test split
 train = data_df[:'2016-09']
 test = data_df['2016-10':]
 
+
+# Display plots based on user's selection of model
 @app.route('/')
 @app.route('/result', methods=['POST'])
 def home():
@@ -39,6 +38,7 @@ def home():
     if request.method == 'POST':
         method = request.form['forecast']
 
+        # Forecasting using saved ARMA model
         if method == "arma":
             result=SARIMAXResults.load('model/arma_model.pkl')
             forecast_values = result.get_forecast(steps=test.shape[0])
@@ -67,6 +67,7 @@ def home():
             plt.savefig('static/' + new_arma_plot)
             return render_template('index.html', forecast='ARMA', fcast='static/' + new_arma_plot)
 
+        # Forecasting using saved ARIMA model
         elif method =="arima":
             arima_result = SARIMAXResults.load('model/arima_model.pkl')
             arima_forecast_values = arima_result.get_forecast(steps=test.shape[0])
@@ -95,6 +96,7 @@ def home():
             plt.savefig('static/' + new_arima_plot)
             return render_template('index.html', forecast='ARIMA', fcast='static/' + new_arima_plot)
 
+        # Forecasting using saved Exponential Smoothing model
         elif method == 'exp':
             exp_model = pickle.load(open('model/exp_smoothing_model.pkl', 'rb'))
             exp_smoothing_result = exp_model.fit(smoothing_level=0.5,optimized=True)
@@ -118,6 +120,7 @@ def home():
             plt.savefig('static/' + new_exp_plot)
             return render_template('index.html', forecast='Exponential Smoothing', fcast='static/' + new_exp_plot)
 
+        # Forecasting using saved Prophet model
         elif method == 'prophet':
             prophet_model = pickle.load(open('model/prophet_model.pkl', 'rb'))
             test.index = pd.DatetimeIndex(test.index)
@@ -145,6 +148,7 @@ def home():
             plt.savefig('static/' + new_prophet_plot)
             return render_template('index.html', forecast='Prophet', fcast='static/' + new_prophet_plot)
 
+        # Forecasting using saved AutoARIMA model
         elif method == 'auto_arima':
             auto_arima_result = SARIMAXResults.load('model/auto_arima_model.pkl')
             auto_arima_forecast = auto_arima_result.predict(n_periods=test.shape[0])

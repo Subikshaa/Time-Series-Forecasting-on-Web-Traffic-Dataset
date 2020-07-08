@@ -18,10 +18,12 @@ SECRET_KEY = os.urandom(24)
 # Read data from S3 bucket
 bucket = "flaskforecast"
 file_name = "final_data.csv"
-
 s3 = boto3.client('s3',aws_access_key_id = YOUR_ACCESS_KEY,aws_secret_access_key=YOUR_SECRET_KEY)
 obj = s3.get_object(Bucket= bucket, Key= file_name)
 data_df = pd.read_csv(obj['Body'])
+
+# data_df = pd.read_csv('Preprocessed_data/final_data.csv')
+
 data_df = data_df.set_index('Date')
 data_df.index = pd.DatetimeIndex(data_df.index)
 

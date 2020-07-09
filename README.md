@@ -19,7 +19,7 @@ Performed time-series analysis and forecasting on Google's web traffic dataset t
 Use requirements.txt file to install the dependancies.
 
   ```
-  pip install -r requirements.txt
+  pip install -r req.txt
   ```
   
 To run the application on local system, comment lines 19-23 in app.py and uncomment line 25. Enter the following command in terminal.
